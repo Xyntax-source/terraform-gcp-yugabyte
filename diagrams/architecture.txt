@@ -1,0 +1,62 @@
++------------------------------------------------------------------------------------------------------------+
+|                                        Google Cloud Platform (GCP)                                         |
+|                                                                                                            |
+|  +----------------------------------------+    +-------------------------------------+    +------------+   |
+|  |              VPC Network               |    |          Service Accounts          |    | Cloud KMS  |    |
+|  |                                        |    |           & IAM Roles              |    | Encryption |    |
+|  |  +---------------+  +---------------+  |    |                                     |    +------------+   |
+|  |  | Public Subnet |  | Private Subnet|  |    |  - YugabyteDB Service Account      |                      |
+|  |  |               |  |               |  |    |  - Workload Identity Federation    |    +------------+    |
+|  |  | - Bastion Host|  | - YugabyteDB  |  |    |  - Minimal IAM Permissions         |    |    GCS     |    |
+|  |  |   (Optional)  |  |   Nodes (MIG) |  |    |                                     |    |   Bucket   |   |
+|  |  | - NAT Gateway |  | - Internal    |  |    +-------------------------------------+    | (Backups)  |   |
+|  |  |               |  |   Load        |  |                                                +------------+  |
+|  |  |               |  |   Balancer    |  |                                                                |
+|  |  +---------------+  +---------------+  |                                                                |
+|  |                                        |                                                                |
+|  |  Firewall Rules:                       |                                                                |
+|  |  - Internal YugabyteDB communication   |                                                                |
+|  |  - SSH Access with restrictions        |                                                                |
+|  |  - Database ports (5433, 9042, etc.)   |                                                                |
+|  |  - Optional Egress Restrictions        |                                                                |
+|  +----------------------------------------+                                                                |
+|                                                                                                            |
++------------------------------------------------------------------------------------------------------------+
+
+                                       ↑
+                                       | Managed by
+                                       ↓
+
++------------------------------------------------------------------------------------------------------------+
+|                                    Terraform Configuration                                                  |
+|                                                                                                             |
+|  +-----------------+  +-----------------+  +-----------------+                                              |
+|  |     main.tf     |  |   variables.tf  |  |    outputs.tf   |                                              |
+|  +-----------------+  +-----------------+  +-----------------+                                              |
+|                                                                                                             |
+|  +--------------------------------------------+                                                             |
+|  |                   Modules                  |                                                             |
+|  |                                            |                                                             |
+|  |  +-----------+  +-----------+  +--------+  |                                                             |
+|  |  | VPC       |  | IAM       |  |YugabyteDB|  |                                                           |
+|  |  | Module    |  | Module    |  |Module   |  |                                                            |
+|  |  |           |  |           |  |         |  |                                                            |
+|  |  | - Network |  | - Service |  | - VM    |  |                                                            |
+|  |  | - Subnets |  |   Account |  |   Config|  |                                                            |
+|  |  | - NAT     |  | - IAM     |  | - Disks |  |                                                            |
+|  |  | - Firewall|  |   Roles   |  | - LB    |  |                                                            |
+|  |  +-----------+  +-----------+  +--------+  |                                                             |
+|  +--------------------------------------------+                                                             |
+|                                                                                                             |
++------------------------------------------------------------------------------------------------------------+
+
++-------------------------------------+
+|     High Availability Features      |
+|                                     |
+| - Multi-zone deployment             |
+| - Managed Instance Groups           |
+| - Auto-healing                      |
+| - Health checks                     |
+| - Redundant NAT Gateways            |
+| - Controlled rollout policies       |
++-------------------------------------+ 

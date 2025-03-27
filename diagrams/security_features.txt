@@ -1,0 +1,31 @@
++-------------------------------------------------------+
+|            YugabyteDB on GCP Security Features         |
++-------------------------------------------------------+
+
++------------------------+      +------------------------+
+|  Network Security      |      |  Identity & Access     |
+|                        |      |                        |
+|  - Private Subnets     |      |  - Workload Identity   |
+|  - Firewall Rules      |      |    Federation          |
+|  - VPC Flow Logs       |      |  - Minimal IAM         |
+|  - Egress Restrictions |      |    Permissions         |
+|  - NAT Gateways        |      |  - Service Accounts    |
++------------------------+      +------------------------+
+
++------------------------+      +------------------------+
+|  Data Security         |      |  Compute Security      |
+|                        |      |                        |
+|  - KMS Disk Encryption |      |  - Shielded VMs        |
+|  - Automated Backups   |      |  - Secure Boot         |
+|  - Secure Connections  |      |  - Integrity Monitoring|
+|  - Encrypted Transport |      |  - OS Patch Management |
++------------------------+      +------------------------+
+
++------------------------+
+|  Access Security       |
+|                        |
+|  - Bastion Host        |
+|  - SSH Key Auth        |
+|  - Restricted IP Ranges|
+|  - Limited Ports Open  |
++------------------------+ 

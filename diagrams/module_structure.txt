@@ -1,0 +1,35 @@
++----------------------------------------------------------+
+|              Terraform GCP YugabyteDB Repository           |
++----------------------------------------------------------+
+
++----------------------+  +-----------------------+  +---------------------+
+|     Root Files       |  |   Module Structure    |  |   CI/CD Pipeline    |
++----------------------+  +-----------------------+  +---------------------+
+| - main.tf            |  | - modules/            |  | - .github/workflows |
+| - variables.tf       |  |   - vpc/              |  |   - update-version  |
+| - outputs.tf         |  |   - iam/              |  |   - update-submodule|
+| - terraform.tfvars.ex|  |   - yugabytedb/       |  | - .ci/              |
+| - README.md          |  |     - templates/      |  |   - update-version  |
+| - GUIDE.md           |  |                       |  |                     |
+| - LICENSE            |  |                       |  |                     |
++----------------------+  +-----------------------+  +---------------------+
+
++----------------------------------------------------------+
+|                      Module Details                       |
++----------------------------------------------------------+
+
++----------------------+  +-----------------------+  +---------------------+
+|     VPC Module       |  |     IAM Module        |  |  YugabyteDB Module  |
++----------------------+  +-----------------------+  +---------------------+
+| Files:               |  | Files:                |  | Files:              |
+| - main.tf            |  | - main.tf             |  | - main.tf           |
+| - variables.tf       |  | - variables.tf        |  | - variables.tf      |
+| - outputs.tf         |  | - outputs.tf          |  | - outputs.tf        |
+|                      |  |                       |  | - templates/        |
+| Creates:             |  | Creates:              |  |   - startup.sh.tpl  |
+| - VPC Network        |  | - Service Account     |  |                     |
+| - Subnets            |  | - IAM Roles           |  | Creates:            |
+| - NAT Gateways       |  | - Workload Identity   |  | - VM Instances      |
+| - Firewall Rules     |  |   Federation          |  | - Disks             |
+|                      |  |                       |  | - Load Balancers    |
++----------------------+  +-----------------------+  +---------------------+ 

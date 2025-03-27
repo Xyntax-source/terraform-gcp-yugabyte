@@ -1,0 +1,30 @@
++----------------------------------------------------------------------+
+|                     Terraform Deployment Workflow                      |
++----------------------------------------------------------------------+
+
++--------------+     +--------------+     +--------------+     +--------------+
+| 1. Configure |     | 2. Initialize|     | 3. Plan      |     | 4. Apply     |
+| Variables    | --> | Terraform    | --> | Deployment   | --> | Changes      |
+|              |     |              |     |              |     |              |
+| terraform.   |     | terraform    |     | terraform    |     | terraform    |
+| tfvars       |     | init         |     | plan         |     | apply        |
++--------------+     +--------------+     +--------------+     +--------------+
+                                                                      |
+                                                                      v
++---------------------+     +---------------------+     +---------------------+
+| 5. YugabyteDB       |     | 6. Configure        |     | 7. Connect to       |
+| Cluster Creation    |     | YugabyteDB          |     | Database            |
+|                     | --> |                     | --> |                     |
+| - VMs Provisioned   |     | - Replication       |     | Use output          |
+| - Disks Created     |     | - Authentication    |     | connection strings  |
+| - Network Setup     |     | - Users & Roles     |     |                     |
++---------------------+     +---------------------+     +---------------------+
+
+Deployment Steps:
+1. Create terraform.tfvars file (based on example)
+2. Initialize Terraform modules and providers
+3. Generate and review execution plan
+4. Apply changes to create infrastructure
+5. Wait for YugabyteDB cluster creation
+6. Configure YugabyteDB for your application
+7. Connect applications using the provided connection strings 

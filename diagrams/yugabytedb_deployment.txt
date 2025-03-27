@@ -1,0 +1,45 @@
++---------------------------------------------------------------------+
+|                      YugabyteDB Deployment                          |
++---------------------------------------------------------------------+
+
+               +-------------------+
+               |     Client        |
+               |   Applications    |
+               +--------+----------+
+                        |
+                        | Connect via
+                        | - YSQL (Port 5433)
+                        | - YCQL (Port 9042)
+                        | - Redis (Port 6379)
+                        v
++-----------------------------------------------------------------+
+|                     GCP Region                                  |
+|                                                                 |
+|  +-----------------+  +-----------------+  +-----------------+  |
+|  |   Zone 1        |  |   Zone 2        |  |   Zone 3        |  |
+|  |                 |  |                 |  |                 |  |
+|  | +-----------+   |  | +-----------+   |  | +-----------+   |  |
+|  | | YugabyteDB|   |  | | YugabyteDB|   |  | | YugabyteDB|   |  |
+|  | | Node 1    |   |  | | Node 2    |   |  | | Node 3    |   |  |
+|  | |           |   |  | |           |   |  | |           |   |  |
+|  | | - Master  |   |  | | - Master  |   |  | | - Master  |   |  |
+|  | | - TServer |   |  | | - TServer |   |  | | - TServer |   |  |
+|  | +-----------+   |  | +-----------+   |  | +-----------+   |  |
+|  |                 |  |                 |  |                 |  |
+|  | Data Disk       |  | Data Disk       |  | Data Disk       |  |
+|  | (PD-SSD)        |  | (PD-SSD)        |  | (PD-SSD)        |  |
+|  +-----------------+  +-----------------+  +-----------------+  |
+|                                                                 |
+|                     +-------------------+                       |
+|                     | Internal Regional |                       |
+|                     | Load Balancer     |                       |
+|                     +-------------------+                       |
+|                                                                 |
++-----------------------------------------------------------------+
+
+Key Features:
+- Nodes distributed across availability zones for high availability
+- Managed Instance Group with auto-healing
+- Internal Load Balancer for client connections
+- Encrypted disks (optional)
+- Shielded VMs for enhanced security 
