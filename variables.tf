@@ -29,6 +29,11 @@ variable "node_count" {
   description = "Number of YugabyteDB nodes"
   type        = number
   default     = 3
+  
+  validation {
+    condition     = var.node_count >= 3
+    error_message = "Node count must be at least 3 for a production YugabyteDB deployment."
+  }
 }
 
 variable "node_type" {
@@ -38,9 +43,25 @@ variable "node_type" {
 }
 
 variable "disk_size" {
-  description = "Disk size in GB for YugabyteDB nodes"
+  description = "Boot disk size in GB for YugabyteDB nodes"
+  type        = number
+  default     = 50
+  
+  validation {
+    condition     = var.disk_size >= 50
+    error_message = "Boot disk size must be at least 50GB."
+  }
+}
+
+variable "data_disk_size" {
+  description = "Data disk size in GB for YugabyteDB storage"
   type        = number
   default     = 100
+  
+  validation {
+    condition     = var.data_disk_size >= 100
+    error_message = "Data disk size must be at least 100GB for production workloads."
+  }
 }
 
 variable "yb_version" {
@@ -69,10 +90,21 @@ variable "replication_factor" {
   description = "Replication factor for YugabyteDB"
   type        = number
   default     = 3
+  
+  validation {
+    condition     = contains([3, 5, 7], var.replication_factor)
+    error_message = "Replication factor must be one of [3, 5, 7] for optimal availability."
+  }
 }
 
 variable "use_public_ip" {
   description = "Whether to use public IP for YugabyteDB nodes"
+  type        = bool
+  default     = false
+}
+
+variable "use_preemptible_instances" {
+  description = "Whether to use preemptible instances for YugabyteDB nodes (not recommended for production)"
   type        = bool
   default     = false
 }
@@ -105,6 +137,55 @@ variable "repo_name" {
   description = "Repository name for Workload Identity Federation"
   type        = string
   default     = "organization/repository"
+}
+
+# Security related variables
+variable "enable_disk_encryption" {
+  description = "Whether to enable disk encryption using Google KMS"
+  type        = bool
+  default     = false
+}
+
+variable "enable_vpc_flow_logs" {
+  description = "Whether to enable VPC flow logs for enhanced security monitoring"
+  type        = bool
+  default     = true
+}
+
+variable "restrict_egress_traffic" {
+  description = "Whether to restrict egress traffic to essential services only"
+  type        = bool
+  default     = false
+}
+
+variable "create_bastion_host" {
+  description = "Whether to create a bastion host for secure SSH access"
+  type        = bool
+  default     = false
+}
+
+variable "enable_monitoring" {
+  description = "Whether to enable cloud monitoring for YugabyteDB instances"
+  type        = bool
+  default     = true
+}
+
+variable "enable_backup" {
+  description = "Whether to enable automated backups"
+  type        = bool
+  default     = false
+}
+
+variable "backup_retention_days" {
+  description = "Number of days to retain backups"
+  type        = number
+  default     = 7
+}
+
+variable "workload_identity_audience" {
+  description = "Allowed audience for the OIDC provider"
+  type        = string
+  default     = "https://iam.googleapis.com/projects"
 }
 
 # Legacy variables for compatibility

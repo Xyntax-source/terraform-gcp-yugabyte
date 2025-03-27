@@ -45,6 +45,11 @@ output "ysql_connection_string" {
   value       = module.yugabytedb.ysql_connection_string
 }
 
+output "yugabyte_ui_url" {
+  description = "URL for the YugabyteDB admin UI"
+  value       = module.yugabytedb.ui_url
+}
+
 output "yugabytedb_ilb_ip" {
   description = "IP of the YugabyteDB internal load balancer"
   value       = module.yugabytedb.ilb_ip
@@ -58,6 +63,33 @@ output "yugabytedb_cluster_name" {
 output "yugabytedb_node_count" {
   description = "Number of nodes in the YugabyteDB cluster"
   value       = module.yugabytedb.node_count
+}
+
+# Security Outputs
+output "disk_encryption_enabled" {
+  description = "Whether disk encryption is enabled"
+  value       = var.enable_disk_encryption
+}
+
+output "egress_restrictions_enabled" {
+  description = "Whether egress traffic restrictions are enabled"
+  value       = var.restrict_egress_traffic
+}
+
+output "vpc_flow_logs_enabled" {
+  description = "Whether VPC flow logs are enabled"
+  value       = var.enable_vpc_flow_logs
+}
+
+# Deployment Information
+output "deployment_region" {
+  description = "Region where YugabyteDB is deployed"
+  value       = var.region
+}
+
+output "deployment_project" {
+  description = "Project ID where YugabyteDB is deployed"
+  value       = var.project_id
 }
 
 # Combined information for easy access

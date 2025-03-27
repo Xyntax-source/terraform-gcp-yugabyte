@@ -1,0 +1,43 @@
+# Project Configuration
+project_id = "your-gcp-project-id"
+region     = "us-west1"
+
+# Cluster Configuration
+cluster_name       = "yugabyte-cluster"
+node_count         = 3
+replication_factor = 3
+node_type          = "n1-standard-4"
+disk_size          = 50
+data_disk_size     = 100
+
+# Network Configuration
+public_subnets     = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnets    = ["10.0.10.0/24", "10.0.11.0/24"]
+allowed_ssh_ranges = ["YOUR_IP/32"]        # Replace with your IP (e.g., "203.0.113.0/24")
+allowed_db_ranges  = ["YOUR_SUBNET/24"]    # Replace with allowed IPs (e.g., "10.0.0.0/8")
+
+# Workload Identity Federation
+repo_name = "your-organization/your-repository"  # e.g., "YugaByte/terraform-gcp-yugabyte"
+workload_identity_audience = "https://iam.googleapis.com/projects"
+
+# SSH Configuration
+ssh_user        = "centos"
+ssh_public_key  = "~/.ssh/yugabyte_key.pub"
+ssh_private_key = "~/.ssh/yugabyte_key"
+
+# Basic Configuration
+yb_version     = "2024.2.2.1"   # YugabyteDB version
+prefix         = "yb-"          # Prefix for resource names
+use_public_ip  = false          # Set to true to assign public IPs to instances
+
+# Enhanced Security Options
+enable_disk_encryption  = true              # Enable encryption of disks with KMS
+enable_vpc_flow_logs    = true              # Enable VPC flow logs for security monitoring
+restrict_egress_traffic = true              # Restrict outbound traffic to essential services
+create_bastion_host     = true              # Create a bastion host for secure SSH access
+use_preemptible_instances = false           # Not recommended for production
+
+# Monitoring and Backup
+enable_monitoring      = true               # Enable Cloud Monitoring
+enable_backup          = true               # Enable automated backups
+backup_retention_days  = 7                  # Number of days to retain backups 

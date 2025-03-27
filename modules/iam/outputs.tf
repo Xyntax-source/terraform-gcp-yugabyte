@@ -3,26 +3,31 @@
  */
 
 output "service_account_email" {
-  description = "Email of the created service account"
+  description = "Email of the service account"
   value       = google_service_account.yugabyte_sa.email
 }
 
+output "service_account_id" {
+  description = "ID of the service account"
+  value       = google_service_account.yugabyte_sa.id
+}
+
 output "workload_identity_pool_id" {
-  description = "ID of the created Workload Identity Pool"
+  description = "ID of the Workload Identity Pool"
   value       = google_iam_workload_identity_pool.pool.id
 }
 
-output "workload_identity_pool_provider_id" {
-  description = "ID of the created Workload Identity Provider"
-  value       = google_iam_workload_identity_pool_provider.provider.id
-}
-
 output "workload_identity_provider_name" {
-  description = "Full name of the Workload Identity Provider"
+  description = "Name of the Workload Identity Provider"
   value       = google_iam_workload_identity_pool_provider.provider.name
 }
 
-output "service_account_id" {
-  description = "ID of the created service account"
-  value       = google_service_account.yugabyte_sa.id
+output "workload_identity_provider_id" {
+  description = "ID of the Workload Identity Provider"
+  value       = google_iam_workload_identity_pool_provider.provider.id
+}
+
+output "custom_role_id" {
+  description = "ID of the custom role"
+  value       = google_project_iam_custom_role.yugabyte_role.id
 } 

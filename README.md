@@ -1,194 +1,150 @@
-# Terraform Module for YugabyteDB on Google Cloud Platform
+# Terraform Module for YugabyteDB on GCP
 
-This Terraform module deploys a production-ready YugabyteDB cluster on Google Cloud Platform (GCP) with Workload Identity Federation and Virtual Private Cloud (VPC). It provides a comprehensive solution for securely deploying and managing YugabyteDB in the cloud.
-
-## Architecture
-
-This module consists of three main components:
-
-1. **VPC Module**: Creates a custom VPC with public and private subnets, NAT gateway, and appropriate firewall rules.
-2. **IAM Module**: Sets up Workload Identity Federation for authentication and creates necessary service accounts and permissions.
-3. **YugabyteDB Module**: Deploys YugabyteDB instances in a managed instance group with health checks and load balancing.
+This repository contains a Terraform module for deploying YugabyteDB on Google Cloud Platform (GCP) with a focus on security, high availability, and operational excellence.
 
 ## Features
 
-- **Secure Authentication**: Uses Workload Identity Federation instead of service account keys
-- **Network Isolation**: Deploys YugabyteDB in private subnets with controlled access
-- **High Availability**: Configurable replication factor and multi-zone deployment
-- **Managed Instance Group**: Automatic instance management with health checks
-- **Load Balancing**: Internal load balancer for YugabyteDB access
-- **Modular Design**: Each component can be modified independently
-- **Comprehensive Security**: Firewall rules, IAM permissions, and network isolation
+- **Secure Networking**:
+  - VPC with public and private subnets
+  - Private connectivity for YugabyteDB nodes
+  - Redundant NAT gateways for high availability
+  - Fine-grained firewall rules with network tags
+  - Optional egress traffic restrictions
 
-## Prerequisites
+- **Strong Security**:
+  - Workload Identity Federation for secure authentication
+  - Minimal IAM permissions following principle of least privilege
+  - Disk encryption with Google KMS
+  - Shielded VMs with secure boot and integrity monitoring
+  - VPC flow logs for enhanced network security monitoring
+  - Option to create a bastion host for secure SSH access
 
-1. **GCP Account and Project**
-   - A GCP account with billing enabled
-   - A GCP project created
-   - Required APIs enabled:
-     - Compute Engine API
-     - Cloud Resource Manager API
-     - IAM API
-     - IAM Credentials API
-     - Workload Identity Federation API
+- **High Availability**:
+  - Nodes distributed across availability zones
+  - Comprehensive health checks with auto-healing
+  - Regional internal load balancer with session affinity
+  - Controlled rollout policy for updates
 
-2. **Terraform**
-   - Terraform v1.0.0 or later
-   - Google Cloud Provider v4.0 or later
+- **Operational Excellence**:
+  - Proper log rotation and management
+  - Monitoring integration
+  - Automated backups
+  - Comprehensive startup monitoring
+
+## Architecture
+
+The module consists of three main components:
+
+1. **VPC Module** (`./modules/vpc`): Creates the network infrastructure including VPC, subnets, NAT gateways, and firewall rules.
+2. **IAM Module** (`./modules/iam`): Sets up Workload Identity Federation and necessary service accounts with minimal permissions.
+3. **YugabyteDB Module** (`./modules/yugabytedb`): Deploys YugabyteDB nodes, load balancers, and health checks.
 
 ## Usage
 
 ```hcl
-module "yugabyte_cluster" {
-  source = "github.com/YugaByte/terraform-gcp-yugabyte.git"
+module "yugabytedb" {
+  source = "github.com/yugabyte/terraform-gcp-yugabyte"
 
-  # Project Configuration
+  # Project configuration
   project_id = "your-gcp-project-id"
   region     = "us-west1"
-  
-  # Cluster Configuration
+
+  # Cluster configuration
   cluster_name       = "yugabyte-cluster"
   node_count         = 3
   replication_factor = 3
-  
-  # Network Configuration
+  node_type          = "n1-standard-4"
+  disk_size          = 50
+  data_disk_size     = 100
+
+  # Network configuration
   public_subnets     = ["10.0.1.0/24", "10.0.2.0/24"]
   private_subnets    = ["10.0.10.0/24", "10.0.11.0/24"]
   allowed_ssh_ranges = ["YOUR_IP/32"]
   allowed_db_ranges  = ["YOUR_SUBNET/24"]
-  
+
   # Workload Identity Federation
   repo_name = "your-organization/your-repository"
-  
-  # SSH Configuration
-  ssh_user        = "centos"
-  ssh_public_key  = "/path/to/public/key"
-  ssh_private_key = "/path/to/private/key"
+
+  # SSH configuration
+  ssh_user       = "centos"
+  ssh_public_key = "~/.ssh/yugabyte_key.pub"
+  ssh_private_key = "~/.ssh/yugabyte_key"
+
+  # Enhanced security options
+  enable_disk_encryption  = true
+  enable_vpc_flow_logs    = true
+  restrict_egress_traffic = true
+  create_bastion_host     = true
 }
 ```
 
-## Modules
+## Required Inputs
 
-### VPC Module
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| project_id | GCP Project ID | string | - |
+| region | GCP region for deployment | string | - |
+| ssh_public_key | Path to SSH public key | string | - |
+| ssh_private_key | Path to SSH private key | string | - |
+| repo_name | Repository name for Workload Identity Federation | string | - |
 
-The VPC module creates a custom VPC with public and private subnets, NAT gateway, and firewall rules.
+## Optional Inputs
 
-#### Inputs
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| cluster_name | Name of the YugabyteDB cluster | string | "yugabyte-cluster" |
+| node_count | Number of YugabyteDB nodes | number | 3 |
+| node_type | GCP machine type for YugabyteDB nodes | string | "n1-standard-4" |
+| disk_size | Boot disk size in GB | number | 50 |
+| data_disk_size | Data disk size in GB | number | 100 |
+| replication_factor | YugabyteDB replication factor | number | 3 |
+| yb_version | YugabyteDB version | string | "2024.2.2.1" |
+| enable_disk_encryption | Whether to enable disk encryption | bool | false |
+| enable_vpc_flow_logs | Whether to enable VPC flow logs | bool | true |
+| restrict_egress_traffic | Whether to restrict egress traffic | bool | false |
+| create_bastion_host | Whether to create a bastion host | bool | false |
+| enable_monitoring | Whether to enable monitoring | bool | true |
+| enable_backup | Whether to enable automated backups | bool | false |
 
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| vpc_name | Name of the VPC | string | - | yes |
-| region | GCP region for the VPC | string | - | yes |
-| public_subnets | List of public subnet CIDR blocks | list(string) | ["10.0.1.0/24", "10.0.2.0/24"] | no |
-| private_subnets | List of private subnet CIDR blocks | list(string) | ["10.0.10.0/24", "10.0.11.0/24"] | no |
-| allowed_ssh_ranges | List of CIDR blocks allowed to connect via SSH | list(string) | ["0.0.0.0/0"] | no |
-| allowed_db_ranges | List of CIDR blocks allowed to connect to the database | list(string) | ["0.0.0.0/0"] | no |
-
-#### Outputs
-
-| Name | Description |
-|------|-------------|
-| vpc_id | ID of the created VPC |
-| vpc_name | Name of the created VPC |
-| vpc_self_link | Self link of the created VPC |
-| public_subnet_ids | IDs of the public subnets |
-| private_subnet_ids | IDs of the private subnets |
-
-### IAM Module
-
-The IAM module sets up Workload Identity Federation and creates necessary service accounts and permissions.
-
-#### Inputs
-
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| project_id | GCP Project ID | string | - | yes |
-| workload_identity_pool_id | ID for the Workload Identity Pool | string | "yugabyte-pool" | no |
-| workload_identity_provider_id | ID for the Workload Identity Provider | string | "yugabyte-provider" | no |
-| oidc_issuer_uri | URI for the OIDC issuer | string | "https://token.actions.githubusercontent.com" | no |
-| service_account_id | ID for the YugabyteDB service account | string | "yugabyte-sa" | no |
-| repo_name | Repository name for Workload Identity Federation | string | - | yes |
-
-#### Outputs
+## Outputs
 
 | Name | Description |
 |------|-------------|
-| service_account_email | Email of the created service account |
-| workload_identity_pool_id | ID of the created Workload Identity Pool |
-| workload_identity_provider_name | Full name of the Workload Identity Provider |
-
-### YugabyteDB Module
-
-The YugabyteDB module deploys YugabyteDB instances in a managed instance group with health checks and load balancing.
-
-#### Inputs
-
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| cluster_name | Name of the YugabyteDB cluster | string | - | yes |
-| prefix | Prefix for resource names | string | "yugabyte-" | no |
-| region | GCP region for the YugabyteDB cluster | string | - | yes |
-| node_count | Number of nodes in the YugabyteDB cluster | number | 3 | no |
-| node_type | GCP machine type for YugabyteDB nodes | string | "n1-standard-4" | no |
-| disk_size | Disk size in GB for YugabyteDB nodes | number | 100 | no |
-| vpc_id | ID of the VPC | string | - | yes |
-| private_subnet_id | ID of the private subnet | string | - | yes |
-| service_account_email | Email of the service account | string | - | yes |
-| use_public_ip | Whether to use public IP for YugabyteDB nodes | bool | false | no |
-| ssh_user | SSH user for YugabyteDB nodes | string | "centos" | no |
-| ssh_public_key | Path to SSH public key | string | - | yes |
-| yb_version | YugabyteDB version | string | "2024.2.2.1" | no |
-| replication_factor | Replication factor for YugabyteDB | number | 3 | no |
-| script_bucket | GCS bucket to store startup scripts | string | - | yes |
-
-#### Outputs
-
-| Name | Description |
-|------|-------------|
-| cluster_name | Name of the YugabyteDB cluster |
-| instance_group | Instance group for YugabyteDB nodes |
 | ysql_connection_string | YSQL connection string |
-| ilb_ip | IP of the internal load balancer |
-| region | Region of the YugabyteDB cluster |
-| node_count | Number of nodes in the YugabyteDB cluster |
+| yugabyte_ui_url | URL for the YugabyteDB admin UI |
+| yugabytedb_ilb_ip | IP of the YugabyteDB internal load balancer |
+| service_account_email | Email of the service account |
+| vpc_id | ID of the created VPC |
 
-## Security Considerations
+## Security Best Practices
 
-1. **Workload Identity Federation**
-   - Use Workload Identity Federation instead of service account keys for enhanced security
-   - Configure repository access properly to prevent unauthorized use
+For a production deployment, consider the following security recommendations:
 
-2. **Network Isolation**
-   - YugabyteDB instances are deployed in private subnets
-   - NAT gateway provides outbound internet access
-   - Firewall rules restrict inbound traffic
+1. **Restrict IP Access**: 
+   - Set `allowed_ssh_ranges` to specific trusted IP ranges
+   - Set `allowed_db_ranges` to specific application subnets
 
-3. **Firewall Rules**
-   - Restrict SSH access to specific IP ranges
-   - Limit database access to authorized networks
+2. **Use a Bastion Host**: 
+   - Enable `create_bastion_host = true` for secure SSH access
 
-4. **IAM Permissions**
-   - Service account has minimal required permissions
-   - Use principle of least privilege for all IAM roles
+3. **Enable Disk Encryption**: 
+   - Set `enable_disk_encryption = true` to encrypt all disks with KMS
 
-## Monitoring and Maintenance
+4. **Restrict Egress Traffic**: 
+   - Set `restrict_egress_traffic = true` to control outbound traffic
 
-1. **Health Checks**
-   - Automatic health checks for YugabyteDB instances
-   - Managed instance group handles instance replacement
+5. **Enable Flow Logs**: 
+   - Keep `enable_vpc_flow_logs = true` for security monitoring
 
-2. **Logging and Monitoring**
-   - Enable logging for YugabyteDB instances
-   - Set up alerts for health check failures
+## Getting Started
 
-3. **Backups**
-   - Implement regular backups using YugabyteDB's built-in tools
-   - Store backups in a separate GCS bucket
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+For detailed deployment instructions, refer to the [Step-by-Step Guide](GUIDE.md).
 
 ## License
 
-This project is licensed under the terms specified in the LICENSE file.
+Apache License 2.0
+
+## Support
+
+For support or questions, open an issue in this repository or contact YugabyteDB support.

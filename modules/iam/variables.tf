@@ -20,10 +20,21 @@ variable "oidc_issuer_uri" {
   default     = "https://token.actions.githubusercontent.com"
 }
 
+variable "allowed_audience" {
+  description = "Allowed audience for the OIDC provider"
+  type        = string
+  default     = "https://iam.googleapis.com/projects"
+}
+
 variable "service_account_id" {
   description = "ID for the YugabyteDB service account"
   type        = string
   default     = "yugabyte-sa"
+  
+  validation {
+    condition     = can(regex("^[a-z][-a-z0-9]{5,29}$", var.service_account_id))
+    error_message = "The service account ID must be 6-30 characters long, contain lowercase letters, numbers, and hyphens, and start with a letter."
+  }
 }
 
 variable "repo_name" {
