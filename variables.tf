@@ -1,95 +1,133 @@
+/**
+ * Variables for YugabyteDB on GCP deployment
+ */
+
+variable "project_id" {
+  description = "GCP Project ID"
+  type        = string
+}
+
+variable "region" {
+  description = "GCP region for deployment"
+  type        = string
+  default     = "us-west1"
+}
+
 variable "cluster_name" {
-  description = "The name for the cluster (universe) being created."
+  description = "Name of the YugabyteDB cluster"
   type        = string
+  default     = "yugabyte-cluster"
 }
-variable "use_public_ip_for_ssh" {
-  description = "Flag to control use of public or private ips for ssh."
-  default = "true"
-  type = string
-}
-variable "replication_factor" {
-  description = "The replication factor for the universe."
-  default     = 3
+
+variable "prefix" {
+  description = "Prefix for resource names"
   type        = string
+  default     = "yb-"
 }
+
 variable "node_count" {
-  description = "The number of nodes to create YugaByte Db Cluter"
+  description = "Number of YugabyteDB nodes"
+  type        = number
   default     = 3
-  type        = string
+}
 
-  validation {
-    condition     = tonumber(var.node_count) >= 3
-    error_message = "The node_count must be at least 3 for a production cluster."
-  }
-}
-variable "vpc_network" {
-  description = "VPC network to deploy YugaByte DB"
-  default     = "default"
-  type        = string
-}
-variable "vpc_firewall" {
-  description = "Firewall used by the YugaByte Node"
-  default     = "default"
-  type        = string
-}
-variable "ssh_private_key" {
-  description = "The private key to use when connecting to the instances."
-  type        = string
-}
-variable "ssh_public_key" {
-  description = "SSH public key to be use when creating the instances."
-  type        = string
-}
-variable "ssh_user" {
-  description = "User name to ssh YugaByte Node to configure cluster"
-  type        = string
-}
 variable "node_type" {
-  description = "Type of Node to be used for YugaByte DB node "
+  description = "GCP machine type for YugabyteDB nodes"
+  type        = string
   default     = "n1-standard-4"
-  type        = string
-}
-variable "yb_edition" {
-  description = "The edition of YugaByteDB to install"
-  default     = "ce"
-  type        = string
 }
 
-variable "yb_download_url" {
-  description = "The download location of the YugaByteDB edition"
-  default     = "https://downloads.yugabyte.com"
-  type        = string
+variable "disk_size" {
+  description = "Disk size in GB for YugabyteDB nodes"
+  type        = number
+  default     = 100
 }
 
 variable "yb_version" {
-  description = "The version number of YugaByteDB to install"
+  description = "YugabyteDB version"
+  type        = string
   default     = "2024.2.2.1"
+}
+
+variable "ssh_user" {
+  description = "SSH user for the instances"
+  type        = string
+  default     = "centos"
+}
+
+variable "ssh_public_key" {
+  description = "Path to SSH public key"
   type        = string
 }
 
-variable "region_name" {
-  description = "Region name for GCP"
-  default     = "us-west1"
+variable "ssh_private_key" {
+  description = "Path to SSH private key"
   type        = string
 }
-variable "disk_size" {
-  description = "Disk size for YugaByte DB nodes"
-  default     = "50"
-  type        = string
 
-  validation {
-    condition     = tonumber(var.disk_size) >= 50
-    error_message = "The disk_size must be at least 50GB for a production cluster."
-  }
+variable "replication_factor" {
+  description = "Replication factor for YugabyteDB"
+  type        = number
+  default     = 3
 }
-variable "prefix" {
-  description = "Prefix prepended to all resources created."
-  default     = "yugabyte-"
+
+variable "use_public_ip" {
+  description = "Whether to use public IP for YugabyteDB nodes"
+  type        = bool
+  default     = false
+}
+
+variable "public_subnets" {
+  description = "List of public subnet CIDR blocks"
+  type        = list(string)
+  default     = ["10.0.1.0/24", "10.0.2.0/24"]
+}
+
+variable "private_subnets" {
+  description = "List of private subnet CIDR blocks"
+  type        = list(string)
+  default     = ["10.0.10.0/24", "10.0.11.0/24"]
+}
+
+variable "allowed_ssh_ranges" {
+  description = "List of CIDR blocks allowed to connect via SSH"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]  # Note: For production, restrict this to specific IPs
+}
+
+variable "allowed_db_ranges" {
+  description = "List of CIDR blocks allowed to connect to the database"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]  # Note: For production, restrict this to specific IPs
+}
+
+variable "repo_name" {
+  description = "Repository name for Workload Identity Federation"
   type        = string
+  default     = "organization/repository"
+}
+
+# Legacy variables for compatibility
+variable "vpc_network" {
+  description = "[DEPRECATED] Use modules/vpc instead"
+  type        = string
+  default     = "default"
+}
+
+variable "vpc_firewall" {
+  description = "[DEPRECATED] Use modules/vpc instead"
+  type        = string
+  default     = "default"
 }
 
 variable "allowed_ips" {
-  description = "List of IP addresses or CIDR ranges that are allowed to access the YugabyteDB cluster"
+  description = "[DEPRECATED] Use allowed_ssh_ranges and allowed_db_ranges instead"
   type        = list(string)
   default     = ["0.0.0.0/0"]
+}
+
+variable "use_public_ip_for_ssh" {
+  description = "[DEPRECATED] Use use_public_ip instead"
+  type        = string
+  default     = "true"
 }

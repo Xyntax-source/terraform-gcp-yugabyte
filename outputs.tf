@@ -1,62 +1,74 @@
-output "ui" {
-  sensitive = false
-  value     = "http://${google_compute_instance.yugabyte_node.0.network_interface.0.access_config.0.nat_ip}:7000"
-}
-output "ssh_user" {
-  sensitive = false
-  value = "${var.ssh_user}"
-}
-output "ssh_key" {
-  sensitive = false
-  value     = "${var.ssh_private_key}"
+/**
+ * Outputs for YugabyteDB on GCP deployment
+ */
+
+# VPC Outputs
+output "vpc_id" {
+  description = "ID of the created VPC"
+  value       = module.vpc.vpc_id
 }
 
-output "JDBC" {
-  sensitive =false
-  value     = "postgresql://yugabyte@${google_compute_instance.yugabyte_node.0.network_interface.0.access_config.0.nat_ip}:5433"
+output "vpc_name" {
+  description = "Name of the created VPC"
+  value       = module.vpc.vpc_name
 }
 
-output "YSQL"{
-  sensitive = false
-  value     = "ysqlsh -U yugabyte -h ${google_compute_instance.yugabyte_node.0.network_interface.0.access_config.0.nat_ip} -p 5433"
+output "public_subnet_ids" {
+  description = "IDs of the public subnets"
+  value       = module.vpc.public_subnet_ids
 }
 
-output "YCQL"{
-  sensitive = false
-  value     = "ycqlsh ${google_compute_instance.yugabyte_node.0.network_interface.0.access_config.0.nat_ip} 9042"
+output "private_subnet_ids" {
+  description = "IDs of the private subnets"
+  value       = module.vpc.private_subnet_ids
 }
 
-output "YEDIS"{
-  sensitive = false
-  value     = "redis-cli -h ${google_compute_instance.yugabyte_node.0.network_interface.0.access_config.0.nat_ip} -p 6379"
+# IAM Outputs
+output "service_account_email" {
+  description = "Email of the service account"
+  value       = module.iam.service_account_email
 }
 
+output "workload_identity_pool_id" {
+  description = "ID of the Workload Identity Pool"
+  value       = module.iam.workload_identity_pool_id
+}
+
+output "workload_identity_provider_name" {
+  description = "Name of the Workload Identity Provider"
+  value       = module.iam.workload_identity_provider_name
+}
+
+# YugabyteDB Outputs
+output "ysql_connection_string" {
+  description = "YSQL connection string"
+  value       = module.yugabytedb.ysql_connection_string
+}
+
+output "yugabytedb_ilb_ip" {
+  description = "IP of the YugabyteDB internal load balancer"
+  value       = module.yugabytedb.ilb_ip
+}
+
+output "yugabytedb_cluster_name" {
+  description = "Name of the YugabyteDB cluster"
+  value       = module.yugabytedb.cluster_name
+}
+
+output "yugabytedb_node_count" {
+  description = "Number of nodes in the YugabyteDB cluster"
+  value       = module.yugabytedb.node_count
+}
+
+# Combined information for easy access
 output "cluster_info" {
-  description = "Information about the deployed cluster"
+  description = "Combined information about the YugabyteDB cluster"
   value = {
-    name = var.cluster_name
-    node_count = var.node_count
-    replication_factor = var.replication_factor
-    region = var.region_name
-    disk_size = var.disk_size
-    machine_type = var.node_type
-  }
-}
-
-output "node_ips" {
-  description = "List of all node IPs"
-  value = {
-    public_ips = google_compute_instance.yugabyte_node[*].network_interface[0].access_config[0].nat_ip
-    private_ips = google_compute_instance.yugabyte_node[*].network_interface[0].network_ip
-  }
-}
-
-output "connection_strings" {
-  description = "Connection strings for different interfaces"
-  value = {
-    ysql = "ysqlsh -U yugabyte -h ${google_compute_instance.yugabyte_node[0].network_interface[0].access_config[0].nat_ip} -p 5433"
-    ycql = "ycqlsh ${google_compute_instance.yugabyte_node[0].network_interface[0].access_config[0].nat_ip} 9042"
-    yedis = "redis-cli -h ${google_compute_instance.yugabyte_node[0].network_interface[0].access_config[0].nat_ip} -p 6379"
-    jdbc = "postgresql://yugabyte@${google_compute_instance.yugabyte_node[0].network_interface[0].access_config[0].nat_ip}:5433"
+    cluster_name       = module.yugabytedb.cluster_name
+    connection_string  = module.yugabytedb.ysql_connection_string
+    node_count         = module.yugabytedb.node_count
+    region             = module.yugabytedb.region
+    vpc_id             = module.vpc.vpc_id
+    service_account    = module.iam.service_account_email
   }
 }

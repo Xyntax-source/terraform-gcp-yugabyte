@@ -1,131 +1,71 @@
-data "google_compute_image" "YugaByte_DB_Image" {
-  family  = "centos-7"
-  project = "centos-cloud"
-}
-data "google_compute_zones" "available" {
-    region = "${var.region_name}"
-}
+/**
+ * Terraform configuration for YugabyteDB deployment on GCP
+ * Using Workload Identity Federation and VPC
+ */
 
-resource "google_compute_firewall" "YugaByte-Firewall" {
-  name = "${var.vpc_firewall}-${var.prefix}${var.cluster_name}-firewall"
-  network = var.vpc_network
-  allow {
-      protocol = "tcp"
-      ports = ["9000","7000","6379","9042","5433","22"]
-  }
-  target_tags = ["${var.prefix}${var.cluster_name}"]
-  source_ranges = var.allowed_ips
-}
-resource "google_compute_firewall" "YugaByte-Intra-Firewall" {
-  name = "${var.vpc_firewall}-${var.prefix}${var.cluster_name}-intra-firewall"
-  network = var.vpc_network
-  allow {
-      protocol = "tcp"
-      ports = ["7100", "9100"]
-  }
-  target_tags = ["${var.prefix}${var.cluster_name}"]
-  source_ranges = var.allowed_ips
-}
-
-resource "google_compute_instance" "yugabyte_node" {
-    count = var.node_count
-    name = "${var.prefix}${var.cluster_name}-n${format("%d", count.index + 1)}"
-    machine_type = var.node_type
-    zone = element(data.google_compute_zones.available.names, count.index)
-    tags=["${var.prefix}${var.cluster_name}"]
-
-    boot_disk{
-        initialize_params {
-            image = data.google_compute_image.YugaByte_DB_Image.self_link
-            size = var.disk_size
-        }
+terraform {
+  required_version = ">= 1.0.0"
+  
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 4.0"
     }
-    metadata = {
-        sshKeys = "${var.ssh_user}:${file(var.ssh_public_key)}"
-    }
-
-    network_interface{
-        network = var.vpc_network
-        access_config {
-            // external ip to instance
-        }
-    }
-
-    provisioner "file" {
-        source = "${path.module}/utilities/scripts/install_software.sh"
-        destination = "/home/${var.ssh_user}/install_software.sh"
-        connection {
-	        host = self.network_interface.0.access_config.0.nat_ip
-            type = "ssh"
-            user = var.ssh_user
-            private_key = file(var.ssh_private_key)
-        }
-    }
-
-    provisioner "file" {
-        source = "${path.module}/utilities/scripts/create_universe.sh"
-        destination ="/home/${var.ssh_user}/create_universe.sh"
-        connection {
-	        host = self.network_interface.0.access_config.0.nat_ip
-            type = "ssh"
-            user = var.ssh_user
-            private_key = file(var.ssh_private_key)
-        }
-    }
-    provisioner "file" {
-        source = "${path.module}/utilities/scripts/start_master.sh"
-        destination ="/home/${var.ssh_user}/start_master.sh"
-        connection {
-	        host = self.network_interface.0.access_config.0.nat_ip
-            type = "ssh"
-            user = var.ssh_user
-            private_key = file(var.ssh_private_key)
-        }
-    }
-    provisioner "file" {
-        source = "${path.module}/utilities/scripts/start_tserver.sh"
-        destination ="/home/${var.ssh_user}/start_tserver.sh"
-        connection {
-	        host = self.network_interface.0.access_config.0.nat_ip
-            type = "ssh"
-            user = var.ssh_user
-            private_key = file(var.ssh_private_key)
-        }
-    }
-    provisioner "remote-exec" {
-        inline = [
-            "chmod +x /home/${var.ssh_user}/install_software.sh",
-            "chmod +x /home/${var.ssh_user}/create_universe.sh",
-            "chmod +x /home/${var.ssh_user}/start_tserver.sh",
-            "chmod +x /home/${var.ssh_user}/start_master.sh",
-            "/home/${var.ssh_user}/install_software.sh '${var.yb_version}'"
-        ]
-        connection {
-	        host = self.network_interface.0.access_config.0.nat_ip
-            type = "ssh"
-            user = var.ssh_user
-            private_key = file(var.ssh_private_key)
-        }
-    }
-}
-
-locals {
-    depends_on = ["google_compute_instance.yugabyte_node"]
-    ssh_ip_list = "${var.use_public_ip_for_ssh == "true" ? join(" ",google_compute_instance.yugabyte_node.*.network_interface.0.access_config.0.nat_ip) : join(" ",google_compute_instance.yugabyte_node.*.network_interface.0.network_ip)}"
-    config_ip_list = "${join(" ",google_compute_instance.yugabyte_node.*.network_interface.0.network_ip)}"
-    zone = "${join(" ", google_compute_instance.yugabyte_node.*.zone)}"
-}
-
-resource "null_resource" "create_yugabyte_universe" {
-  # Define the trigger condition to run the provisioner block
-  triggers = {
-    cluster_instance_ids = "${join(",", google_compute_instance.yugabyte_node.*.id)}"
-  }
-
-  depends_on = [google_compute_instance.yugabyte_node]
-
-  provisioner "local-exec" {
-      command = "${path.module}/utilities/scripts/create_universe.sh 'GCP' '${var.region_name}' ${var.replication_factor} '${local.config_ip_list}' '${local.ssh_ip_list}' '${local.zone}' '${var.ssh_user}' ${var.ssh_private_key}"
   }
 }
 
+provider "google" {
+  project = var.project_id
+  region  = var.region
+}
+
+# Create a GCS bucket for scripts
+resource "google_storage_bucket" "scripts" {
+  name     = "${var.project_id}-yugabyte-scripts"
+  location = var.region
+  uniform_bucket_level_access = true
+}
+
+# VPC Module
+module "vpc" {
+  source = "./modules/vpc"
+  
+  vpc_name         = "${var.prefix}${var.cluster_name}-vpc"
+  region           = var.region
+  public_subnets   = var.public_subnets
+  private_subnets  = var.private_subnets
+  allowed_ssh_ranges = var.allowed_ssh_ranges
+  allowed_db_ranges  = var.allowed_db_ranges
+}
+
+# IAM Module
+module "iam" {
+  source = "./modules/iam"
+  
+  project_id                   = var.project_id
+  workload_identity_pool_id    = "${var.prefix}${var.cluster_name}-pool"
+  workload_identity_provider_id = "${var.prefix}${var.cluster_name}-provider"
+  service_account_id           = "${var.prefix}${var.cluster_name}-sa"
+  repo_name                    = var.repo_name
+}
+
+# YugabyteDB Module
+module "yugabytedb" {
+  source = "./modules/yugabytedb"
+  
+  cluster_name         = var.cluster_name
+  prefix               = var.prefix
+  region               = var.region
+  node_count           = var.node_count
+  node_type            = var.node_type
+  disk_size            = var.disk_size
+  vpc_id               = module.vpc.vpc_id
+  private_subnet_id    = module.vpc.private_subnet_ids[0]
+  service_account_email = module.iam.service_account_email
+  use_public_ip        = var.use_public_ip
+  ssh_user             = var.ssh_user
+  ssh_public_key       = var.ssh_public_key
+  yb_version           = var.yb_version
+  replication_factor   = var.replication_factor
+  script_bucket        = google_storage_bucket.scripts.name
+} 
