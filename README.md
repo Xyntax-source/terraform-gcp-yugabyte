@@ -1,83 +1,180 @@
-# terraform-gcp-yugabyte
-A Terraform module to deploy and run YugabyteDB on Google Cloud.
+# Terraform Module for YugabyteDB on Google Cloud Platform
 
-## Config
-* First create a terraform file with provider details 
-  ```
-  provider "google" 
-  { 
-    # Provide your GCP Creadentilals 
-    credentials = "${file("yugabyte-pcf-bc8114281026.json")}"
+This Terraform module deploys a production-ready YugabyteDB cluster on Google Cloud Platform (GCP). It handles the complete setup including compute instances, networking, security, and cluster configuration.
 
-    # The name of your GCP project 
-    project = "yugabyte-pcf"
-  }
-  ```
-  Note :- You can get credentials file by following steps given [here](https://cloud.google.com/docs/authentication/getting-started)
+## Features
 
-* Now add the yugabyte terraform module to your file 
-  ```
-  module "yugabyte-db-cluster" {
-  source = "github.com/YugaByte/terraform-gcp-yugabyte.git"
+- Deploys a distributed YugabyteDB cluster on GCP
+- Configurable number of nodes and replication factor
+- Automatic setup of firewall rules and security groups
+- Built-in health checks and monitoring
+- Support for both public and private IP access
+- Automatic cluster initialization and configuration
+- Comprehensive outputs for monitoring and management
 
-  # The name of the cluster to be created.
-  cluster_name = "test-yugabyte"
+## Prerequisites
 
-   # key pair.
-  ssh_private_key = "SSH_PRIVATE_KEY_HERE"
-  ssh_public_key = "SSH_PUBLIC_KEY_HERE"
-  ssh_user = "SSH_USER_NAME_HERE"
+1. **GCP Account and Project**
+   - A GCP account with billing enabled
+   - A GCP project created
+   - Required APIs enabled:
+     - Compute Engine API
+     - Cloud Resource Manager API
+     - IAM API
 
-  # The region name where the nodes should be spawned.
-  region_name = "YOUR VPC REGION"
+2. **GCP Credentials**
+   - Service account with appropriate permissions
+   - JSON key file for authentication
+   - Required IAM roles:
+     - `roles/compute.instanceAdmin.v1`
+     - `roles/compute.networkAdmin`
+     - `roles/iam.serviceAccountUser`
 
-  # Replication factor.
-  replication_factor = "3"
+3. **Terraform**
+   - Terraform v0.13 or later
+   - Google Cloud Provider v4.0 or later
 
-  # The number of nodes in the cluster, this cannot be lower than the replication factor.
-  node_count = "3"
-  }
-  ```
+## Quick Start
 
+1. **Initialize Terraform**
+   ```bash
+   terraform init
+   ```
 
-## Usage
+2. **Create a Terraform Configuration**
+   Create a file named `main.tf` with the following content:
+   ```hcl
+   provider "google" {
+     credentials = file("path/to/your/service-account-key.json")
+     project     = "your-project-id"
+   }
 
-Init terraform first if you have not already done so.
+   module "yugabyte-db-cluster" {
+     source = "github.com/YugaByte/terraform-gcp-yugabyte.git"
 
-```
-$ terraform init
-```
+     # Cluster Configuration
+     cluster_name = "my-yugabyte-cluster"
+     node_count   = "3"
+     replication_factor = "3"
 
-To check what changes are going to happen in the environment run the following 
+     # Network Configuration
+     region_name = "us-west1"
+     vpc_network = "default"
+     allowed_ips = ["YOUR_IP/32"]  # Restrict access to your IP
 
-```
-$ terraform plan
-```
+     # SSH Configuration
+     ssh_user = "centos"
+     ssh_private_key = "path/to/private/key"
+     ssh_public_key  = "path/to/public/key"
 
+     # Resource Configuration
+     node_type = "n1-standard-4"
+     disk_size = "100"  # GB
+   }
+   ```
 
-Now run the following to create the instances and bring up the cluster.
+3. **Plan and Apply**
+   ```bash
+   terraform plan
+   terraform apply
+   ```
 
-```
-$ terraform apply
-```
+## Input Variables
 
-Once the cluster is created, you can go to the URL `http://<node ip or dns name>:7000` to view the UI. You can find the node's ip or dns by running the following:
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| cluster_name | Name of the YugabyteDB cluster | string | - | yes |
+| node_count | Number of nodes in the cluster | string | "3" | no |
+| replication_factor | Replication factor for the cluster | string | "3" | no |
+| region_name | GCP region to deploy the cluster | string | "us-west1" | no |
+| vpc_network | VPC network name | string | "default" | no |
+| allowed_ips | List of allowed IP addresses/CIDR ranges | list(string) | ["0.0.0.0/0"] | no |
+| node_type | GCP machine type | string | "n1-standard-4" | no |
+| disk_size | Disk size in GB | string | "50" | no |
+| ssh_user | SSH user for instance access | string | - | yes |
+| ssh_private_key | Path to SSH private key | string | - | yes |
+| ssh_public_key | Path to SSH public key | string | - | yes |
+| yb_version | YugabyteDB version to install | string | "2024.2.2.1" | no |
+| prefix | Prefix for resource names | string | "yugabyte-" | no |
 
-```
-terraform state show google_compute_instance.yugabyte_node[0]
-```
+## Outputs
 
-You can access the cluster UI by going to any of the following URLs.
+| Name | Description |
+|------|-------------|
+| ui | YugabyteDB UI URL |
+| cluster_info | Information about the deployed cluster |
+| node_ips | List of all node IPs (public and private) |
+| connection_strings | Connection strings for different interfaces (YSQL, YCQL, YEDIS, JDBC) |
 
-You can check the state of the nodes at any point by running the following command.
+## Security Considerations
 
-```
-$ terraform show
-```
+1. **Network Security**
+   - By default, the cluster is accessible from all IPs (0.0.0.0/0)
+   - Use the `allowed_ips` variable to restrict access to specific IP ranges
+   - Consider using private IPs for internal communication
 
-To destroy what we just created, you can run the following command.
+2. **SSH Access**
+   - SSH access is required for cluster management
+   - Use strong SSH keys and restrict access to trusted users
+   - Consider using SSH bastion hosts for additional security
 
-```
-$ terraform destroy
-```
-`Note:- To make any changes in the created cluster you will need the terraform state files. So don't delete state files of Terraform.`
+3. **Firewall Rules**
+   - The module creates necessary firewall rules for:
+     - YugabyteDB ports (9000, 7000, 6379, 9042, 5433)
+     - SSH access (port 22)
+     - Intra-cluster communication (ports 7100, 9100)
+
+## Best Practices
+
+1. **Resource Sizing**
+   - Minimum 3 nodes for production use
+   - Minimum 50GB disk size per node
+   - Use n1-standard-4 or larger machine types
+
+2. **High Availability**
+   - Deploy across multiple availability zones
+   - Use appropriate replication factor (3 for production)
+   - Regular backups and monitoring
+
+3. **Cost Optimization**
+   - Use appropriate machine types for your workload
+   - Consider using preemptible instances for non-critical workloads
+   - Monitor resource usage and adjust as needed
+
+## Monitoring and Maintenance
+
+1. **Accessing the Cluster**
+   - YugabyteDB UI: http://<node-ip>:7000
+   - YSQL: Use the provided connection string
+   - YCQL: Use the provided connection string
+   - YEDIS: Use the provided connection string
+
+2. **Health Checks**
+   - Monitor node status through the YugabyteDB UI
+   - Check replication status
+   - Monitor disk usage and performance metrics
+
+3. **Backup and Recovery**
+   - Regular backups are recommended
+   - Use YugabyteDB's built-in backup features
+   - Test recovery procedures regularly
+
+## Troubleshooting
+
+1. **Common Issues**
+   - SSH connection failures: Check firewall rules and SSH keys
+   - Node startup issues: Check logs in /var/log/yugabyte
+   - Cluster initialization failures: Check create_universe.sh logs
+
+2. **Logs and Diagnostics**
+   - YugabyteDB logs: /var/log/yugabyte
+   - System logs: /var/log/syslog
+   - Terraform logs: Check terraform.log
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the terms specified in the LICENSE file.

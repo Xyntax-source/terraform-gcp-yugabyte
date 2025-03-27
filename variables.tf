@@ -15,7 +15,12 @@ variable "replication_factor" {
 variable "node_count" {
   description = "The number of nodes to create YugaByte Db Cluter"
   default     = 3
-  type        = string  
+  type        = string
+
+  validation {
+    condition     = tonumber(var.node_count) >= 3
+    error_message = "The node_count must be at least 3 for a production cluster."
+  }
 }
 variable "vpc_network" {
   description = "VPC network to deploy YugaByte DB"
@@ -71,9 +76,20 @@ variable "disk_size" {
   description = "Disk size for YugaByte DB nodes"
   default     = "50"
   type        = string
+
+  validation {
+    condition     = tonumber(var.disk_size) >= 50
+    error_message = "The disk_size must be at least 50GB for a production cluster."
+  }
 }
 variable "prefix" {
   description = "Prefix prepended to all resources created."
   default     = "yugabyte-"
   type        = string
+}
+
+variable "allowed_ips" {
+  description = "List of IP addresses or CIDR ranges that are allowed to access the YugabyteDB cluster"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
 }
